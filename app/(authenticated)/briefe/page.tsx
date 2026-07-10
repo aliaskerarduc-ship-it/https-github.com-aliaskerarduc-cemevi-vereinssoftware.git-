@@ -125,6 +125,9 @@ Der Vorstand`,
   },
 };
 
+const ADMIN_TEMPLATES = ['antrag_benutzerkonto', 'antrag_email'];
+
+
 type VereinSettings = {
   name: string;
   unterzeile: string;
@@ -413,6 +416,8 @@ export default function BriefePage() {
   const [einzelnBetrag, setEinzelnBetrag] = useState('');
   const [einzelnTemplate, setEinzelnTemplate] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
+  const [antragFunktion, setAntragFunktion] = useState<string[]>([]);
+  const [antragBerechtigungen, setAntragBerechtigungen] = useState<string[]>([]);
 
   // Ayarları yükle
   useEffect(() => {
@@ -497,10 +502,89 @@ export default function BriefePage() {
     openPrint(result.map(m => buildPage(m, serienBetreff, serienText, serienDatum, serienBetrag, settings)).join(''));
   };
 
+  const printAntrag = () => {
+    const name = einzelnMember ? `${einzelnMember.firstName} ${einzelnMember.lastName}` : '';
+    const email = einzelnMember?.email ?? '';
+    const chk = (items: string[], sel: string[]) => items.map(i =>
+      `<div style="display:flex;align-items:center;gap:8px;margin:3px 0;"><span style="font-size:15px;">${sel.includes(i) ? '☑' : '☐'}</span><span>${i}</span></div>`
+    ).join('');
+    const logoL = settings.logoLeft ? `${window.location.origin}${settings.logoLeft}` : '';
+    const logoR = settings.logoRight ? `${window.location.origin}${settings.logoRight}` : '';
+    const isEmail = einzelnTemplate === 'antrag_email';
+    const body = isEmail ? `
+      <h3 style="color:#1f497d;margin-bottom:10px;">Antrag auf Einrichtung einer E-Mail-Adresse</h3>
+      <p>Hiermit beantrage ich als Vorsitzender unseres Cem Evi, für unser Mitglied</p>
+      <p style="margin:10px 0;"><strong>Name:</strong> ${name || '________________________________'}</p>
+      <p>eine offizielle E-Mail-Adresse für die Vereinskommunikation einzurichten.</p>
+      <p style="margin-top:8px;">Die E-Mail-Adresse wird für die Ausübung der Vereinsaufgaben sowie für den Zugang zum Vereinsverwaltungssystem verwendet.</p>
+      <p style="margin-top:8px;">Bitte teilen Sie der betreffenden Person nach der Einrichtung die Zugangsdaten mit.</p>
+    ` : `
+      <h3 style="color:#1f497d;margin-bottom:10px;">Antrag auf Einrichtung eines Benutzerkontos und Vergabe von Berechtigungen</h3>
+      <p>Hiermit beantrage ich als Vorsitzender, für unser Mitglied folgendes Benutzerkonto einzurichten:</p>
+      <table style="width:100%;margin:12px 0;border-collapse:collapse;">
+        <tr>
+          <td style="width:50%;vertical-align:top;padding-right:16px;">
+            <strong style="color:#1f497d;">Angaben zur Person</strong><br/><br/>
+            <strong>Name:</strong>&nbsp;${name || '________________________________'}<br/><br/>
+            <strong>E-Mail:</strong>&nbsp;${email || '________________________________'}
+          </td>
+          <td style="width:50%;vertical-align:top;padding-left:16px;border-left:1px solid #ddd;">
+            <strong style="color:#1f497d;">Funktion / Rolle</strong><br/><br/>
+            ${chk(['Vorstandsvorsitzender', 'Schriftführer', 'Kassierer', 'Benutzer'], antragFunktion)}
+          </td>
+        </tr>
+      </table>
+      <hr style="border:none;border-top:1px solid #ddd;margin:8px 0;"/>
+      <strong style="color:#1f497d;">Zusätzliche Berechtigungen</strong><br/><br/>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px;">
+        ${['Finanzen (Beiträge, Ausgaben, Spenden)', 'Berichte & Statistiken', 'Dokumentenverwaltung', 'Benutzerverwaltung'].map(b =>
+          `<div style="display:flex;align-items:center;gap:6px;"><span style="font-size:15px;">${antragBerechtigungen.includes(b) ? '☑' : '☐'}</span><span style="font-size:9pt;">${b}</span></div>`
+        ).join('')}
+      </div>
+      <p style="margin-top:6px;font-size:9pt;"><strong>Sonstiges:</strong> ________________________________________________</p>
+    `;
+    const html = `<!DOCTYPE html><html><head><style>
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:Arial,sans-serif;font-size:10pt;padding:15mm 20mm;}
+      .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+      .hdr img{height:55px;object-fit:contain;}
+      .hdr-c{text-align:center;flex:1;padding:0 12px;}
+      .sig{margin-top:28px;display:flex;gap:30px;}
+      .sl{flex:1;border-top:1px solid #333;padding-top:4px;font-size:8.5pt;color:#555;}
+      p{margin:6px 0;line-height:1.5;}
+    </style></head><body>
+      <div class="hdr">
+        ${logoL ? `<img src="${logoL}" alt="">` : '<div style="width:55px;"></div>'}
+        <div class="hdr-c">
+          <div style="font-size:13pt;font-weight:bold;color:#1f497d;">${settings.name}</div>
+          <div style="font-size:8.5pt;color:#666;">${settings.unterzeile}</div>
+          <div style="font-size:8.5pt;">${settings.strasse} • ${settings.plz} ${settings.stadt}</div>
+          <div style="font-size:8.5pt;">${settings.telefon} • ${settings.email}</div>
+        </div>
+        ${logoR ? `<img src="${logoR}" alt="">` : '<div style="width:55px;"></div>'}
+      </div>
+      <div style="border-top:3px solid #1f497d;margin:6px 0 2px;"></div>
+      <div style="border-top:1px solid #aaa;margin:0 0 14px;"></div>
+      <div>${body}</div>
+      <div style="margin-top:12px;padding:7px 10px;background:#f5f5f5;border-left:3px solid #1f497d;font-size:8.5pt;color:#555;">
+        Mit meiner Unterschrift bestätige ich als Vorsitzender die Genehmigung der oben genannten Berechtigungen.
+      </div>
+      <div class="sig">
+        <div class="sl">Ort, Datum: ${einzelnDatum}</div>
+        <div class="sl">Unterschrift Vorsitzender</div>
+        <div class="sl">Name: ${settings.vorsitzender}</div>
+      </div>
+    </body></html>`;
+    const win = window.open('', '_blank');
+    if (win) { win.document.write(html); win.document.close(); setTimeout(() => win.print(), 500); }
+  };
+
   const printEinzeln = () => {
-    if (!einzelnMember) { toast.error('Bitte Mitglied auswählen.'); return; }
+    const isAdminTpl = ADMIN_TEMPLATES.includes(einzelnTemplate);
+    if (!isAdminTpl && !einzelnMember) { toast.error('Bitte Mitglied auswählen.'); return; }
     if (!einzelnText.trim()) { toast.error('Bitte Brieftext eingeben.'); return; }
-    openPrint(buildPage({...einzelnMember, family: null}, einzelnBetreff, einzelnText, einzelnDatum, einzelnBetrag, settings));
+    const fakeMember = { firstName: '', lastName: '', gender: '', street: '', zipCode: '', city: '', email: 'admin@akm-duisburg.de', memberNumber: 0, memberSince: '', family: null };
+    openPrint(buildPage(einzelnMember ? {...einzelnMember, family: null} : fakeMember, einzelnBetreff, einzelnText, einzelnDatum, einzelnBetrag, settings));
   };
 
   const inp = 'w-full px-3 py-2.5 border border-input rounded-lg bg-background focus:outline-none focus:ring-2 focus:ring-ring text-sm';
@@ -665,9 +749,16 @@ export default function BriefePage() {
                 {einzelnMember.email && <p className="text-sm text-muted-foreground">{einzelnMember.email}</p>}
               </div>
             ) : (
-              <div className="text-center py-10 text-muted-foreground text-sm border-2 border-dashed border-border rounded-lg">
-                Mitglied suchen und auswählen
-              </div>
+              ADMIN_TEMPLATES.includes(einzelnTemplate) ? (
+                <div className="text-center py-10 text-sm border-2 border-dashed border-emerald-300 rounded-lg bg-emerald-50 text-emerald-700">
+                  ✓ Dieses Dokument benötigt keinen Empfänger.<br/>
+                  <span className="text-xs text-emerald-600">Wird direkt gedruckt.</span>
+                </div>
+              ) : (
+                <div className="text-center py-10 text-muted-foreground text-sm border-2 border-dashed border-border rounded-lg">
+                  Mitglied suchen und auswählen
+                </div>
+              )
             )}
           </div>
 
@@ -675,35 +766,80 @@ export default function BriefePage() {
             <h2 className="font-bold text-base flex items-center gap-2"><Mail className="w-4 h-4 text-primary" /> Briefinhalt</h2>
             <div>
               <label className="block text-xs font-medium text-muted-foreground mb-1">Vorlage</label>
-              <select value={einzelnTemplate} onChange={e => { setEinzelnTemplate(e.target.value); applyTemplate(e.target.value, setEinzelnBetreff, setEinzelnText, einzelnDatum, einzelnBetrag, einzelnMember); }} className={inp}>
+              <select value={einzelnTemplate} onChange={e => { setEinzelnTemplate(e.target.value); setAntragFunktion([]); setAntragBerechtigungen([]); if (!ADMIN_TEMPLATES.includes(e.target.value)) applyTemplate(e.target.value, setEinzelnBetreff, setEinzelnText, einzelnDatum, einzelnBetrag, einzelnMember); }} className={inp}>
                 <option value="">— Vorlage wählen —</option>
                 {Object.entries(TEMPLATES).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Datum</label>
-                <input value={einzelnDatum} onChange={e => setEinzelnDatum(e.target.value)} className={inp} />
+            {ADMIN_TEMPLATES.includes(einzelnTemplate) ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Datum</label>
+                  <input value={einzelnDatum} readOnly className={inp + " bg-muted/40"} />
+                </div>
+                {einzelnTemplate === "antrag_benutzerkonto" && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-2">Funktion / Rolle</label>
+                      <div className="space-y-1 border border-border rounded-lg p-3">
+                        {["Vorstandsvorsitzender","Schriftführer","Kassierer","Benutzer"].map(f => (
+                          <label key={f} className="flex items-center gap-3 cursor-pointer p-1.5 rounded hover:bg-muted/50">
+                            <input type="checkbox" className="w-4 h-4 accent-emerald-600"
+                              checked={antragFunktion.includes(f)}
+                              onChange={e => setAntragFunktion(prev => e.target.checked ? [...prev, f] : prev.filter(x => x !== f))} />
+                            <span className="text-sm">{f}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-muted-foreground mb-2">Zusätzliche Berechtigungen</label>
+                      <div className="space-y-1 border border-border rounded-lg p-3">
+                        {["Finanzen (Beiträge, Ausgaben, Spenden)","Berichte & Statistiken","Dokumentenverwaltung","Benutzerverwaltung"].map(b => (
+                          <label key={b} className="flex items-center gap-3 cursor-pointer p-1.5 rounded hover:bg-muted/50">
+                            <input type="checkbox" className="w-4 h-4 accent-emerald-600"
+                              checked={antragBerechtigungen.includes(b)}
+                              onChange={e => setAntragBerechtigungen(prev => e.target.checked ? [...prev, b] : prev.filter(x => x !== b))} />
+                            <span className="text-sm">{b}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+                <button onClick={printAntrag}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:opacity-90">
+                  <Printer className="w-4 h-4" /> Antrag drucken
+                </button>
               </div>
-              <div>
-                <label className="block text-xs font-medium text-muted-foreground mb-1">Betrag (€)</label>
-                <input value={einzelnBetrag} onChange={e => setEinzelnBetrag(e.target.value)} className={inp} placeholder="z.B. 10.00" />
-              </div>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Betreff</label>
-              <input value={einzelnBetreff} onChange={e => setEinzelnBetreff(e.target.value)} className={inp} placeholder="Betreff..." />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
-                Brieftext <span className="font-normal opacity-60 text-xs">{`{{ANREDE}} {{NACHNAME}} {{VORNAME}} {{DATUM}} {{BETRAG}}`}</span>
-              </label>
-              <RichTextEditor value={einzelnText} onChange={setEinzelnText} rows={11} />
-            </div>
-            <button onClick={printEinzeln} disabled={!einzelnMember || !einzelnText.trim()}
-              className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
-              <Printer className="w-4 h-4" /> Brief drucken
-            </button>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Datum</label>
+                    <input value={einzelnDatum} onChange={e => setEinzelnDatum(e.target.value)} className={inp} />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-muted-foreground mb-1">Betrag (€)</label>
+                    <input value={einzelnBetrag} onChange={e => setEinzelnBetrag(e.target.value)} className={inp} placeholder="z.B. 10.00" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">Betreff</label>
+                  <input value={einzelnBetreff} onChange={e => setEinzelnBetreff(e.target.value)} className={inp} placeholder="Betreff..." />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">
+                    Brieftext <span className="font-normal opacity-60 text-xs">{`{{ANREDE}} {{NACHNAME}} {{VORNAME}} {{DATUM}} {{BETRAG}}`}</span>
+                  </label>
+                  <RichTextEditor value={einzelnText} onChange={setEinzelnText} rows={11} />
+                </div>
+                <button onClick={printEinzeln} disabled={!einzelnMember || !einzelnText.trim()}
+                  className="w-full flex items-center justify-center gap-2 bg-emerald-600 text-white py-2.5 rounded-lg font-medium hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed">
+                  <Printer className="w-4 h-4" /> Brief drucken
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
