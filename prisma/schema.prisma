@@ -1,0 +1,346 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native"]
+    
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  VORSTAND
+  KASSIERER
+  SACHBEARBEITER
+  SCHRIFTFUEHRER
+}
+
+enum MemberStatus {
+  AKTIV
+  PASSIV
+  AUSGETRETEN
+  VERSTORBEN
+  AUSGESCHLOSSEN
+}
+
+enum Gender {
+  MAENNLICH
+  WEIBLICH
+  DIVERS
+}
+
+enum PaymentMethod {
+  BAR
+  UEBERWEISUNG
+  LASTSCHRIFT
+  PAYPAL
+  SONSTIGE
+}
+
+enum ContributionLevel {
+  STUDENT
+  ERMAESSIGT
+  NORMAL
+  FAMILIE
+  PARTNER
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String
+  permissions   String    @default("")
+  role          UserRole  @default(SACHBEARBEITER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Family {
+  id          String    @id @default(cuid())
+  familyName  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  members     Member[]
+}
+
+model Member {
+  id                String       @id @default(cuid())
+  memberNumber      Int          @unique @default(autoincrement())
+  firstName         String
+  lastName          String
+  birthDate         DateTime?
+  gender            Gender?
+  nationality       String?
+  street            String?
+  zipCode           String?
+  city              String?
+  phone             String?
+  email             String?
+  entryDate         DateTime     @default(now())
+  exitDate          DateTime?
+  status            MemberStatus @default(AKTIV)
+  contributionLevel ContributionLevel @default(NORMAL)
+  photoPath         String?
+  photoIsPublic     Boolean      @default(false)
+  notes             String?
+  deletedAt         DateTime?
+  deletedBy         String?
+  gebaeudekaufBeitrag Float?
+  finanzierung      String?
+  zahlungsweise     String?
+  familyId          String?
+  family            Family?      @relation(fields: [familyId], references: [id])
+  donations         Donation[]
+  contributions     Contribution[]
+  gremiumAmter      GremiumAmter[]
+  documents         Document[]
+  attendances       MeetingAttendance[]
+  customFieldValues CustomFieldValue[]
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([status])
+  @@index([familyId])
+}
+
+model CustomField {
+  id          String   @id @default(cuid())
+  fieldName   String   @unique
+  fieldLabel  String
+  fieldType   String   @default("TEXT")
+  isRequired  Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  values      CustomFieldValue[]
+}
+
+model CustomFieldValue {
+  id            String      @id @default(cuid())
+  value         String
+  memberId      String
+  member        Member      @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  customFieldId String
+  customField   CustomField @relation(fields: [customFieldId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([memberId, customFieldId])
+}
+
+model Donation {
+  id              String        @id @default(cuid())
+  donationNumber  Int           @unique @default(autoincrement())
+  memberId        String?
+  member          Member?       @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  date            DateTime
+  amount          Float
+  paymentMethod   PaymentMethod
+  purpose         String?
+  notes                String?
+  externalDonorName    String?
+  externalDonorAddress String?
+  deletedAt       DateTime?
+  deletedBy       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@index([memberId])
+  @@index([date])
+}
+
+model Contribution {
+  id                  String            @id @default(cuid())
+  contributionNumber  Int               @unique @default(autoincrement())
+  memberId            String
+  member              Member            @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  paymentDate         DateTime
+  periodMonth         Int
+  periodYear          Int
+  amount              Float
+  paymentMethod       PaymentMethod
+  notes               String?
+  deletedAt           DateTime?
+  deletedBy           String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@unique([memberId, periodMonth, periodYear])
+  @@index([memberId])
+  @@index([paymentDate])
+}
+
+model Document {
+  id              String   @id @default(cuid())
+  memberId        String?
+  member          Member?  @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  fileName        String
+  fileType        String
+  cloudStoragePath String
+  isPublic        Boolean  @default(false)
+  category        String?
+  notes                String?
+  externalDonorName    String?
+  externalDonorAddress String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([memberId])
+}
+
+model Meeting {
+  id          String              @id @default(cuid())
+  title       String
+  date        DateTime
+  description String?
+  isActive    Boolean             @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  attendances MeetingAttendance[]
+}
+
+model MeetingAttendance {
+  id              String   @id @default(cuid())
+  meetingId       String
+  meeting         Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  memberId        String
+  member          Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  checkedIn       Boolean  @default(false)
+  signatureData   String?
+  checkInTime     DateTime?
+  isEligibleVote  Boolean  @default(false)
+  isEligibleElect Boolean  @default(false)
+  ineligibleReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([meetingId, memberId])
+  @@index([meetingId])
+}
+
+model Ausgabe {
+  id              String        @id @default(cuid())
+  ausgabeNumber   Int           @unique @default(autoincrement())
+  date            DateTime
+  category        String
+  description     String?
+  amount          Float
+  paymentMethod   String        @default("BAR")
+  notes           String?
+  receiptPath     String?
+  rechnungsNummer String?
+  lieferant       String?
+  deletedAt       DateTime?
+  deletedBy       String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+// Bu satırları schema.prisma'nın en altına ekleyin
+
+enum TerminType {
+  VERANSTALTUNG
+  GEBURTSTAG
+  VERSAMMLUNG
+  FEIERTAG
+  SONSTIGES
+}
+
+model Termin {
+  id          String      @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  allDay      Boolean     @default(true)
+  type        TerminType  @default(VERANSTALTUNG)
+  color       String?
+  memberId    String?
+  createdBy   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([startDate])
+}
+
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([token])
+}
+
+model VereinsFolder {
+  id           String            @id @default(cuid())
+  name         String
+  adminOnly    Boolean           @default(false)
+  allowedRoles String[]          @default([])
+  deletedAt    DateTime?
+  deletedBy    String?
+  createdAt    DateTime          @default(now())
+  documents    VereinsDocument[]
+}
+
+model VereinsDocument {
+  id         String         @id @default(cuid())
+  name       String
+  fileKey    String
+  fileSize   Int?
+  mimeType   String?
+  folderId   String?
+  folder     VereinsFolder? @relation(fields: [folderId], references: [id])
+  uploadedBy String?
+  deletedAt  DateTime?
+  deletedBy  String?
+  createdAt  DateTime       @default(now())
+
+  @@index([folderId])
+}
+
+model Demirbas {
+  id           String    @id @default(cuid())
+  name         String
+  model        String?
+  quantity     Int       @default(1)
+  purchaseDate DateTime?
+  source       String    @default("CEMEVI")
+  donorName    String?
+  price        Float?
+  status       String    @default("AKTIV")
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model GremiumAmter {
+  id        String   @id @default(cuid())
+  memberId  String
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  gremium   String
+  amt       String
+  vonJahr   Int
+  bisJahr   Int?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([memberId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  module    String
+  itemLabel String
+  userName  String
+  createdAt DateTime @default(now())
+
+  @@index([module])
+  @@index([createdAt])
+}
