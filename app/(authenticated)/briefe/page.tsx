@@ -59,6 +59,58 @@ Bitte überweisen Sie den Betrag bis zum {{DATUM}} auf unser Konto.
 Mit freundlichen Grüßen,
 Der Vorstand`,
   },
+  antrag_benutzerkonto: {
+    label: 'Antrag Benutzerkonto',
+    betreff: 'Antrag auf Einrichtung eines Benutzerkontos',
+    text: `Antrag auf Einrichtung eines Benutzerkontos und Vergabe von Berechtigungen
+
+Hiermit beantrage ich als Vorsitzender unseres Cem Evi, für unser Mitglied folgendes Benutzerkonto im Vereinsverwaltungssystem einzurichten:
+
+Name:    ________________________________________________
+E-Mail:  ________________________________________________
+
+Funktion / Rolle:
+☐  Vorsitzender
+☐  Schriftführer
+☐  Kassierer
+☐  Benutzer
+
+Zusätzliche Berechtigungen — folgende Bereiche sollen freigeschaltet werden:
+☐  Finanzen (Beiträge, Ausgaben, Spenden)
+☐  Berichte & Statistiken
+☐  Dokumentenverwaltung
+☐  Benutzerverwaltung
+☐  Sonstiges: ________________________________________________
+
+Hinweis: Falls noch kein Benutzerkonto vorhanden ist, bitte ich um entsprechende Einrichtung.
+
+Mit meiner Unterschrift bestätige ich als Vorsitzender die Genehmigung.
+
+Ort, Datum: _______________________________
+
+Unterschrift Vorsitzender: ________________    Name des Vorsitzenden: ________________`,
+  },
+  antrag_email: {
+    label: 'Antrag E-Mail-Adresse',
+    betreff: 'Antrag auf Einrichtung einer E-Mail-Adresse',
+    text: `Antrag auf Einrichtung einer E-Mail-Adresse
+
+Hiermit beantrage ich als Vorsitzender unseres Cem Evi, für unser Mitglied
+
+Name: ________________________________________________
+
+eine offizielle E-Mail-Adresse für die Vereinskommunikation einzurichten.
+
+Die E-Mail-Adresse wird für die Ausübung der Vereinsaufgaben sowie für den Zugang zum Vereinsverwaltungssystem verwendet.
+
+Bitte teilen Sie der betreffenden Person nach der Einrichtung die Zugangsdaten bzw. die notwendigen Informationen mit.
+
+Mit meiner Unterschrift bestätige ich als Vorsitzender die Genehmigung zur Einrichtung der oben genannten E-Mail-Adresse.
+
+Ort, Datum: _______________________________
+
+Unterschrift Vorsitzender: ________________    Name des Vorsitzenden: ________________`,
+  },
   allgemein: {
     label: 'Allgemeines Schreiben',
     betreff: 'Wichtige Mitteilung',
